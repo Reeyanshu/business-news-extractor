@@ -1,0 +1,38 @@
+name: Business News Extraction
+
+on:
+  schedule:
+    # Run every 3 hours
+    - cron: '0 */3 * * *'
+  workflow_dispatch:  # Also allows manual triggering
+
+jobs:
+  extract-news:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4 pandas google-generativeai
+        
+    - name: Run news extraction
+      env:
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      run: python news_extraction.py
+      
+    - name: Commit and push if changes
+      run: |
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'actions@github.com'
+        git add business_news_summary.csv business_news_*.csv
+        git diff --quiet && git diff --staged --quiet || git commit -m "Update business news [skip ci]"
+        git push
